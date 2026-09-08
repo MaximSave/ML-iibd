@@ -1,0 +1,181 @@
+Задача A. Reinforcement learning. ATARI 
+
+Условие
+
+Требуется обучить модель играть в одну из доступных ATARI игр (https://gymnasium.farama.org/environments/atari/).
+Требования к среде
+
+    Среда должна эмулировать одну из ATARI игр.
+    Наблюдением среды должно выступать RGB изображение экрана.
+
+Требования к реализации
+
+    Требуется реализовать double q learning лосс.
+    Модель должна иметь свёрточную архитектуру или архитектуру трансформер.
+
+Распределение баллов
+
+Максимальное количество баллов за задачу — 10.
+
+    Реализация лосса и обвязки, до +2
+    Реализация модели, до +2
+    Обучение модели, до +3
+    Тестирование модели, до +3
+
+Базовый ноутбук:
+
+Imports
+import numpy as np
+import gymnasium as gym
+import tensorflow as tf
+import tqdm.notebook as tqdm
+import matplotlib.pyplot as plt
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+              tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
+
+
+Environment
+Create the environment. You can use any ATARI environment from here (https://gymnasium.farama.org/environments/atari/), but prefer to use environments with discrete action space with fewer actions.
+
+
+Replay Buffer
+Create a replay buffer to hold game history
+class ReplayBuffer:
+
+    def __init__(self, max_size: int, observation_space: gym.spaces.Space, action_space: gym.spaces.Space, seed: int | None = None):
+        """Stores the replay history with a maximum of `max_size` entries, removing old entries as needed.
+
+        Parameters:
+            max_size: maximal number of entries to keep
+            observation_space: specification of the observation space
+            action_space: specification of the action space
+            seed: seed to initialize the internal random number generator for reproducibility"""
+        ...
+        
+    def add(self, current_observation: np.ndarray, action: int, reward: float, next_observation: np.ndarray, done: bool) -> None:
+        """Add a new entry to the buffer.
+
+        Parameters:
+            current_observation: environment state observed at the current step
+            action: action taken by the model
+            reward: reward received after taking the action
+            next_observation: environment state obversed after taking the action
+            done: whether the episode has ended or not"""
+        ...
+        
+    def sample(self, n_samples: int, replace: bool = True) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Randomly samples `n_samples` from the buffer.
+
+        Parameters:
+            n_samples: number of samples to select
+            replace: sample with or without replacement
+
+        Returns:
+            current observations, actions, rewards, next observations, done"""
+        ...
+
+    def clear(self) -> None:
+        """Clears the buffer"""
+        ...
+
+    def __getitem__(self, index: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Gets a sample at `index`
+
+        Parameters:
+            index: index of the sample to get
+
+        Returns:
+            current observation, action, reward, next observation, done"""
+        ...
+        
+    def __len__(self) -> int:
+        """Returns the number of entries in the buffer"""
+
+Model
+Implement your model. Most if not all ATARI environments have an image observation
+
+
+Sampler
+Implement the sampler
+class Sampler:
+    
+    def __init__(self, epsilon: float, seed: int | None = None):
+        """Selects a random action with probability `epsilon` otherwise selects the most probably action given by the model.
+
+        Parameters:
+            epsilon: the probability to select a random action
+            seed: seed to initialize the internal random number generator for reproducibility"""
+        ...
+        
+    def __call__(self, probabilities: np.ndarray) -> int:
+        """Select an action given the `probabilities
+
+        Parameters:
+            probabilities: probabilities for each action
+
+        Returns:
+            index of the selected action"""
+        ...
+
+
+Play the game
+Implement interacting with the environment and storing entries to the replay buffer
+
+def play_game(model: tf.keras.Model, buffer: ReplayBuffer | None, env: gym.Env, max_steps: int, sampler: Sampler, observation: np.ndarray | None = None) -> np.ndarray:
+    """Play game and record
+
+    Parameters:
+        model: the model to get actions with
+        buffer: replay buffer to store the entries to
+        env: environment to play
+        max_steps: maximal number of steps to perform
+        sampler: sampler to use to sample actions
+        observation: the observation to resume from
+
+    Returns:
+        the last observation"""
+    ...
+
+
+Loss
+Implement double q learning loss
+
+
+def qq_loss(
+    current_observation: tf.Tensor, 
+    action: tf.Tensor, 
+    reward: tf.Tensor, 
+    next_observation: tf.Tensor, 
+    done: tf.Tensor,
+    model: tf.keras.Model,
+    target_model: tf.keras.Model,
+    gamma: float
+) -> tf.Tensor:
+    """Computes double q learning loss.
+
+    Parameters:
+        current_observation: observations at the current time step
+        action: actions taken at the current time step
+        reward: rewards at the current time step
+        next_observation: observations at the next time step
+        done: whether the episode has ended or not
+        model: trainig model
+        target_model: target model
+        gamme: discount
+
+    Returns:
+        Computed loss"""
+    …
+
+Training
+Create models, replay buffers, sampler, optimizer, epsilon decay etc. Implement training loop, show training progress and perform model evaluation once in a while
+
+Testing
+Test the model on the environment and get a cool video
+
