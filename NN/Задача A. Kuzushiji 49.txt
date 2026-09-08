@@ -1,0 +1,147 @@
+Задача A. Kuzushiji 49
+нужно решить задачу классификации:
+https://github.com/rois-codh/kmnist?tab=readme-ov-file
+
+вот базовый блокнот
+"
+from __future__ import annotations
+
+from IPython.display import display, HTML
+display(HTML('<style>.container { width:100% !important; }</style>'))
+
+import os
+import datetime
+import numpy as np
+import sklearn.metrics
+import tensorflow as tf
+import sklearn.datasets
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
+import seaborn as sns
+sns.set_style('dark')
+sns.set(rc={'figure.figsize': (10, 10), 'axes.grid': False})
+
+rng = np.random.default_rng()
+
+def plot_grid(X, ncols=2, nrows=2, figsize=(10, 10), hide_axes=True):
+    fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=figsize)
+    imgs = X[rng.choice(np.arange(X.shape[0]), size=ax.shape)].reshape(*ax.shape, 28, 28)
+    for i in range(ax.shape[0]):
+        for j in range(ax.shape[1]):
+            ax[i, j].imshow(imgs[i, j], cmap='gray')
+            if hide_axes:
+                ax[i, j].get_xaxis().set_visible(False)
+                ax[i, j].get_yaxis().set_visible(False)
+
+def plot_grid_and_label(X, y, model, ncols=2, nrows=2, figsize=(10, 10), hide_axes=True, flatten_image=True, label_description=None):
+    fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=figsize)
+    idx = rng.choice(np.arange(X.shape[0]), size=ax.shape)
+    imgs, labels = X[idx], y[idx]
+    inputs = imgs.reshape(-1, *imgs.shape[2:])
+    
+    if flatten_image:
+        inputs = inputs.reshape(nrows * ncols, -1)
+        
+    map_label = (lambda x: x) if label_description is None else (lambda x: label_description[x])
+        
+    preds = np.argmax(tf.nn.softmax(model.predict(inputs)), axis=-1).reshape(nrows, ncols)
+    for i in range(ax.shape[0]):
+        for j in range(ax.shape[1]):
+            ax[i, j].imshow(imgs[i, j], cmap='gray')
+            ax[i, j].set_title(f'label: {map_label(labels[i, j])}, prediction: {map_label(preds[i, j])}')
+            if hide_axes:
+                ax[i, j].get_xaxis().set_visible(False)
+                ax[i, j].get_yaxis().set_visible(False)
+
+label_description = [
+     'A',   'I',   'U',  'E',  'O',
+    'KA',  'KI',  'KU', 'KE', 'KO',
+    'SA', 'SHI',  'SU', 'SE', 'SO',
+    'TA', 'CHI', 'TSU', 'TE', 'TO',
+    'NA',  'NI',  'NU', 'NE', 'NO',
+    'HA',  'HI',  'FU', 'HE', 'HO',
+    'MA',  'MI',  'MU', 'ME', 'MO',
+    'YA',         'YU',       'YO',
+    'RA',  'RI',  'RU', 'RE', 'RO',
+    'WA',  'II',        'EE', 'WO',
+     'N',  'IT'
+]
+
+counts = { j: np.sum(y_train == i) for i, j in enumerate(label_description) }
+
+counts # what to do with imbalanced classes?
+
+X, y = sklearn.datasets.fetch_openml('Kuzushiji-49', version=1, return_X_y=True, as_frame=False, parser='auto')
+y = np.array(list(map(int, y)))
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+plot_grid(X_train)
+
+# create train and validation datasets, these datasets should use flattened images
+
+# create model, this model should accept a flattened image
+
+model.summary()
+
+tf.keras.utils.plot_model(model)
+
+logdir = os.path.join('logs/kuzushiji-49/', datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
+
+callbacks = [
+    tf.keras.callbacks.ModelCheckpoint(logdir, save_best_only=True, monitor='val_loss'),
+    tf.keras.callbacks.TensorBoard(logdir, update_freq=10)
+]
+
+# compile the model, make sure to add accuracy metric
+
+
+# train the model, make sure to use callbacks and validation dataset
+
+images = X_test.reshape(-1, 28, 28, 1) # normalize if needed
+
+
+plot_grid_and_label(images, y_test, model, label_description=label_description)
+
+y_pred = ... # make predictions
+
+
+_, ax = plt.subplots(figsize=(30, 30))
+sklearn.metrics.ConfusionMatrixDisplay.from_predictions(y_test, y_pred, display_labels=label_description, ax=ax, colorbar=False)
+
+
+accuracy = y_test == y_pred
+np.mean([np.mean(accuracy[y_test == i]) for i in range(49)])
+
+# create train and validation datasets, these datasets should use 28x28x1 images
+
+# create model, this model should accept a 28x28x1 image
+
+model.summary()
+
+tf.keras.utils.plot_model(model)
+
+logdir = os.path.join('logs/kuzushiji-49/', datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
+
+callbacks = [
+    tf.keras.callbacks.ModelCheckpoint(logdir, save_best_only=True, monitor='val_loss'),
+    tf.keras.callbacks.TensorBoard(logdir, update_freq=10)
+]
+
+# compile the model, make sure to add accuracy metric
+
+# train the model, make sure to use callbacks and validation dataset
+
+images = X_test.reshape(-1, 28, 28, 1) # normalize if needed
+
+plot_grid_and_label(images, y_test, model, label_description=label_description, flatten_image=False)
+
+y_pred = ... # make predictions
+
+_, ax = plt.subplots(figsize=(30, 30))
+sklearn.metrics.ConfusionMatrixDisplay.from_predictions(y_test, y_pred, display_labels=label_description, ax=ax, colorbar=False)
+
+accuracy = y_test == y_pred
+np.mean([np.mean(accuracy[y_test == i]) for i in range(49)])
+
+"

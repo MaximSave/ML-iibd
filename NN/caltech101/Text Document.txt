@@ -1,0 +1,235 @@
+Требуется решить задачу классификации caltech101. 
+
+https://data.caltech.edu/records/mzrjq-6wc02
+
+"
+import os
+import keras
+import datetime
+import numpy as np
+import sklearn.metrics
+import matplotlib.pyplot as plt
+import tensorflow_datasets as tfds
+from sklearn.model_selection import train_test_split
+
+import seaborn as sns
+sns.set_style('dark')
+sns.set(rc={'figure.figsize': (10, 10), 'axes.grid': False})
+
+
+
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        tf.config.experimental.set_memory_growth(gpus[0], True)
+    except:
+        pass
+
+
+rng = np.random.default_rng()
+
+
+def plot_grid_and_label(dataset: tf.data.Dataset, model: keras.Model | None = None, ncols=2, nrows=2, figsize=(10, 10), hide_axes=True, label_description=None):
+    fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=figsize)
+
+    if len(dataset.element_spec[0].shape) > 3:
+        length = (len(dataset) - 1) * batch_size
+        dataset = dataset.unbatch()
+    else:
+        length = len(dataset)
+    
+    idx = tf.constant(rng.choice(length, size=np.prod(ax.shape)))
+
+    _, (images, labels) = next(iter(dataset.enumerate().filter(lambda i, j: tf.math.reduce_any(i == idx)).batch(len(idx))))    
+
+    images = images.numpy().reshape(nrows, ncols, *images.shape[1:])
+    labels = labels.numpy().reshape(nrows, ncols)
+
+    map_label = (lambda x: x) if label_description is None else (lambda x: label_description[x])
+
+    if model is not None:
+        predictions = np.argmax(model(images.reshape(-1, *images.shape[2:])).numpy(), axis=-1).reshape(nrows, ncols)
+        get_title = lambda i, j: f'label: {map_label(labels[i, j])}, prediction: {map_label(predictions[i, j])}'
+    else:
+        predictions = None
+        get_title = lambda i, j: map_label(labels[i, j])
+        
+    for i in range(ax.shape[0]):
+        for j in range(ax.shape[1]):
+            ax[i, j].imshow(images[i, j], cmap='gray')
+            ax[i, j].set_title(get_title(i, j))
+            if hide_axes:
+                ax[i, j].get_xaxis().set_visible(False)
+                ax[i, j].get_yaxis().set_visible(False)
+
+
+# Preapre the dataset
+
+Load the dataset. Using, for example, the tensorflow_dataset library.
+
+label_description = [
+    'accordion',
+    'airplanes',
+    'anchor',
+    'ant',
+    'background_google',
+    'barrel',
+    'bass',
+    'beaver',
+    'binocular',
+    'bonsai',
+    'brain',
+    'brontosaurus',
+    'buddha',
+    'butterfly',
+    'camera',
+    'cannon',
+    'car_side',
+    'ceiling_fan',
+    'cellphone',
+    'chair',
+    'chandelier',
+    'cougar_body',
+    'cougar_face',
+    'crab',
+    'crayfish',
+    'crocodile',
+    'crocodile_head',
+    'cup',
+    'dalmatian',
+    'dollar_bill',
+    'dolphin',
+    'dragonfly',
+    'electric_guitar',
+    'elephant',
+    'emu',
+    'euphonium',
+    'ewer',
+    'faces',
+    'faces_easy',
+    'ferry',
+    'flamingo',
+    'flamingo_head',
+    'garfield',
+    'gerenuk',
+    'gramophone',
+    'grand_piano',
+    'hawksbill',
+    'headphone',
+    'hedgehog',
+    'helicopter',
+    'ibis',
+    'inline_skate',
+    'joshua_tree',
+    'kangaroo',
+    'ketch',
+    'lamp',
+    'laptop',
+    'leopards',
+    'llama',
+    'lobster',
+    'lotus',
+    'mandolin',
+    'mayfly',
+    'menorah',
+    'metronome',
+    'minaret',
+    'motorbikes',
+    'nautilus',
+    'octopus',
+    'okapi',
+    'pagoda',
+    'panda',
+    'pigeon',
+    'pizza',
+    'platypus',
+    'pyramid',
+    'revolver',
+    'rhino',
+    'rooster',
+    'saxophone',
+    'schooner',
+    'scissors',
+    'scorpion',
+    'sea_horse',
+    'snoopy',
+    'soccer_ball',
+    'stapler',
+    'starfish',
+    'stegosaurus',
+    'stop_sign',
+    'strawberry',
+    'sunflower',
+    'tick',
+    'trilobite',
+    'umbrella',
+    'watch',
+    'water_lilly',
+    'wheelchair',
+    'wild_cat',
+    'windsor_chair',
+    'wrench',
+    'yin_yang'
+]
+
+train_dataset = tfds.load('caltech101', split='train', as_supervised=True)
+valid_dataset = tfds.load('caltech101', split='test', as_supervised=True)
+
+
+Что здесь?
+
+image_size = (...)
+
+
+def resize_and_normalize_image(image: tf.Tensor, label: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:    
+    ...
+
+
+augmentations = keras.Sequential([
+    ...
+])
+
+batch_size = ...
+
+
+train_dataset = ...
+valid_dataset = ...
+
+
+plot_grid_and_label(valid_dataset, label_description=label_description)
+
+
+
+что здесь?
+
+Model
+
+Prepare your model. Use some convolutional model
+
+
+...
+
+model.summary()
+
+
+keras.utils.plot_model(model)
+
+
+Training¶
+Train your model. Use categorical crossentropy loss and top1 and top5 accuracies.
+
+model.compile(loss=..., optimizer=..., metrics=...)
+model.fit(train_dataset, validation_data=valid_dataset, epochs=...)
+plot_grid_and_label(valid_dataset, model=model, label_description=label_description)
+
+
+
+чо здесь?
+Testing
+
+Plot confusion matrix. Are there similar classes?
+
+
+Get some images from the internet. Do they belong to correct classes according to the model?
+
+"
